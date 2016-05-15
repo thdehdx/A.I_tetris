@@ -28,7 +28,7 @@ int rank1 = 0, rank2 = 0, rank3 = 0, rank4 = 0, rank5 = 0;
 
 char COLOUR[7][4] = {
 	"□","♡","ペ","■","★","の","☆"
-};
+};//블럭을 식별하기 위해서 블럭의 종류에 따라 표시하는 특수문자가 다르게 함
 
 const int _BLOCK_ARR[7][4][4] = {
 	{
@@ -75,7 +75,8 @@ const int _BLOCK_ARR[7][4][4] = {
 	}
 };
 
-typedef struct position {
+typedef struct position//최적의 장소, 회전형태를 찾을때 사용될 구조체
+{
 	int x, y;
 	int rotation;
 	int score;
@@ -112,7 +113,7 @@ int main(void)
 	char NXT = '\0';
 	Pos bestPosition;
 
-	START:
+START:
 	removeCursor();
 	initGame();
 	drawBoarder();
@@ -139,6 +140,7 @@ void initGame(void) {
 	srand((unsigned int)time(NULL));
 	int x = 0, y = 0;
 	randomNum = 9;
+	//게임 보드 초기화
 	for (x = 0; x<X_RIGHT_BOARDER - X_LEFT_BOARDER; x++) {
 		BOARD_ARR[0][x] = LINE;
 		BOARD_ARR[Y_LEN - 1][x] = LINE;
@@ -168,6 +170,7 @@ void initGame(void) {
 
 void drawBoarder(void) {
 	int x = 0, y = 0, k = 0;
+	//게임 보드 그리기
 	for (x = 0, k = 0; x<X_LEN; x++, k++) {
 		for (y = 0; y<Y_LEN; y++) {
 			if (BOARD_ARR[y][x] == LINE) {
@@ -178,7 +181,7 @@ void drawBoarder(void) {
 	}
 	gotoXY(7, 2); printf("HCI's TETRIS GAME");
 
-	//5. 게임 화면에 점수 보드 창을 그리기
+	//게임 화면에 점수 보드 창을 그리기
 	for (y = 0; y<SCORE_HEIGHT; y++)
 	{
 		gotoXY(SCORE_STARTX, SCORE_STARTY + y);
@@ -187,66 +190,71 @@ void drawBoarder(void) {
 			else
 				printf("  ");
 	}
-
-	gotoXY (35, 3);
-	printf ("1등 : %d점", rank1);
+	//랭킹 표시
+	gotoXY(35, 3);
+	printf("1등 : %d점", rank1);
 	gotoXY(35, 4);
-	printf ("2등 : %d점", rank2);
+	printf("2등 : %d점", rank2);
 	gotoXY(35, 5);
-	printf ("3등 : %d점", rank3);
+	printf("3등 : %d점", rank3);
 	gotoXY(35, 6);
-	printf ("4등 : %d점", rank4);
+	printf("4등 : %d점", rank4);
 	gotoXY(35, 7);
-	printf ("5등 : %d점", rank5);
+	printf("5등 : %d점", rank5);
 }
 
 void randomNextBlock(void) {
 	int x, y;
 
-	BIT_Z = rand() % 7;
+	BIT_Z = rand() % 7;//7개의 블록 중 하나
 
-	if (BIT_Z == randomNum)
+	if (BIT_Z == randomNum)//바로 지난 블럭과 같은 블럭이 나온다면 다시 랜덤함수
 		BIT_Z = rand() % 7;
 	else
 		randomNum = BIT_Z;
 
 	for (y = 0; y<4; y++) {
 		for (x = 0; x<4; x++) {
-			BLOCK_ARR[y][x] = _BLOCK_ARR[BIT_Z][y][x];
+			BLOCK_ARR[y][x] = _BLOCK_ARR[BIT_Z][y][x];//배열_BLOCK_ARR에서 정의된 블럭을 BLOCK_ARR에 그려 넣음
 		}
 	}
-}
+}//다음 블럭을 결정하는 함수
 
 int writeBlockOnBoard(void) {
 	int x = 0, y = 0;
 	for (x = 0; x<4; x++) {
 		for (y = 0; y<4; y++) {
 			if (BLOCK_ARR[y][x] != EMPTY) {
-				BOARD_ARR[BIT_Y + y][BIT_X + x] = BIT_Z + 1;
+				BOARD_ARR[BIT_Y + y][BIT_X + x] = BIT_Z + 1;//최대 7까지 가능
 			}
 		}
 	}
 	return 0;
-}
+}//BOARD_ARR안에 랜덤으로 돌린 숫자를 넣음으로써 EMPTY상태가 아니라는 것을 표시
 
-Pos findIdealPosition(void) {
+Pos findIdealPosition(void)//점수요소:getIdealPoint();getClearLinePoint();getAdjacentPoint();getMinusPoint();
+{
 	int firstX = BIT_X, firstY = BIT_Y;
 	Pos position[4] = { 0, };
 	int highestScore = 0, plusScore = 0, minusScore = 0, totalScore = 0;
 	int rotation = 0, bestRotation = 0;
 	int i = 0;
 
-	for (rotation = 0; rotation<4; rotation++) {
-		for (BIT_X = 0, i = 0; 1; BIT_X++) {
+	for (rotation = 0; rotation<4; rotation++)//방향을 4방향으로 돌려본다
+	{
+		for (BIT_X = 0, i = 0; 1; BIT_X++)//X축 왼쪽부터 오른쪽까지 다 이동시켜본다
+		{
 			BIT_Y = 1;
 
-			if (i == 0 && collision()) {
+			if (i == 0 && collision())//블럭에 따라 BIT_X = 0일때 테두리 프레임에 부딪히는 경우가 있어서 일부러 팅겨내기 위함
+			{
 				BIT_X = 1; i++;
 			}
 			else if (collision()) {
 				break;
 			}
-			while (!collision()) {
+			while (!collision())//매 X축마다 블럭을 아래로 충돌할 때까지 내려본다
+			{
 				BIT_Y++;
 			}
 			BIT_Y--;
@@ -256,7 +264,8 @@ Pos findIdealPosition(void) {
 			totalScore = plusScore - minusScore;
 			eraseBlockOffBoard();
 
-			if (highestScore <= totalScore) {
+			if (highestScore <= totalScore)//최적의 장소,모양을 검사한 최종점수가 여태까지의 최고점수보다 높으면 갱신
+			{
 				highestScore = totalScore;
 				position[rotation].x = BIT_X;
 				position[rotation].y = BIT_Y;
@@ -279,7 +288,7 @@ Pos findIdealPosition(void) {
 	return position[bestRotation];
 }//최적의 회전 형태 찾기
 
-void moveBestPos(Pos bestPosition, char *nxt) {
+void moveBestPos(Pos bestPosition, char *nxt){
 	int i;
 	BIT_Y = 1; BIT_X = 5;
 	for (i = 0; i<bestPosition.rotation; i++) {
@@ -308,9 +317,10 @@ void moveBestPos(Pos bestPosition, char *nxt) {
 	}
 	stack();
 	return;
-}
+}//findIdealPosition함수를 통해 찾은 최적의 위치와 모양을 animaioneffect함수를 이용하여 자연스럽게 이동하는것처럼 보이게 구현
 
-void drawInsideGame(void) {
+void drawInsideGame(void) //내부 블럭 그리기
+{
 	int x = 0, y = 0, k = 0;
 	for (y = 1; y<Y_LEN - 1; y++) {
 		for (x = 1, k = 1; x<X_LEN - 1; x++, k++) {
@@ -320,7 +330,7 @@ void drawInsideGame(void) {
 			}
 			else if (BOARD_ARR[y][x] >= 1 && BOARD_ARR[y][x]<8) {
 				gotoXY(k + x + X_LEFT_BOARDER, y + Y_TOP_BOARDER);
-				printf("%s", COLOUR[BOARD_ARR[y][x] - 1]);
+				printf("%s", COLOUR[BOARD_ARR[y][x] - 1]);//writeBlockOnBoard에서 표시한 블럭을 그려서 출력
 			}
 		}
 	}
@@ -341,7 +351,7 @@ void eraseBlockOffBoard(void) {
 			}
 		}
 	}
-}
+}//지나간 블럭 지우기
 
 //////////////블록이 꽉찬 줄 제거 함수////////////
 int clearLine(void) {
